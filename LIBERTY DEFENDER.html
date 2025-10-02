@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Liberty Defender</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Courier New', monospace;
+        }
+        
+        body {
+            background: #002868;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            width: 100%;
+            max-width: 800px;
+        }
+        
+        .campaign-message {
+            font-size: 24px;
+            font-weight: bold;
+            color: white;
+            text-shadow: 2px 2px 0 #BF0A30;
+            margin-bottom: 15px;
+        }
+        
+        .flag-container {
+            position: relative;
+            width: 300px;
+            height: 160px;
+            margin: 0 auto 20px;
+            overflow: hidden;
+            border: 2px solid white;
+        }
+        
+        .flag {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: 
+                linear-gradient(to bottom, 
+                    #BF0A30 0%, #BF0A30 7.7%,
+                    white 7.7%, white 15.4%,
+                    #BF0A30 15.4%, #BF0A30 23.1%,
+                    white 23.1%, white 30.8%,
+                    #BF0A30 30.8%, #BF0A30 38.5%,
+                    white 38.5%, white 46.2%,
+                    #BF0A30 46.2%, #BF0A30 53.9%,
+                    white 53.9%, white 61.6%,
+                    #BF0A30 61.6%, #BF0A30 69.3%,
+                    white 69.3%, white 77%,
+                    #BF0A30 77%, #BF0A30 84.7%,
+                    white 84.7%, white 92.4%,
+                    #BF0A30 92.4%, #BF0A30 100%
+                );
+        }
+        
+        .flag::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 120px;
+            height: 84px;
+            background-color: #002868;
+        }
+        
+        .stars {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 120px;
+            height: 84px;
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            grid-template-rows: repeat(4, 1fr);
+            padding: 6px;
+        }
+        
+        .star {
+            color: white;
+            font-size: 10px;
+            text-align: center;
+        }
+        
+        .game-title {
+            font-size: 42px;
+            color: white;
+            text-shadow: 3px 3px 0 #BF0A30;
+            margin-bottom: 10px;
+        }
+        
+        .game-container {
+            position: relative;
+            width: 800px;
+            height: 500px;
+            background-color: #000033;
+            border: 4px solid #BF0A30;
+            overflow: hidden;
+        }
+        
+        #gameCanvas {
+            display: block;
+        }
+        
+        .game-ui {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: white;
+            font-size: 18px;
+            z-index: 10;
+        }
+        
+        .controls {
+            margin-top: 20px;
+            text-align: center;
+            color: white;
+            font-size: 16px;
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+        
+        .game-over, .game-start, .round-complete, .game-complete {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0, 0, 0, 0.9);
+            padding: 30px;
+            border: 4px solid #BF0A30;
+            text-align: center;
+            width: 80%;
+            z-index: 20;
+        }
+        
+        .game-start {
+            display: block;
+        }
+        
+        .game-over, .round-complete, .game-complete {
+            display: none;
+        }
+        
+        h2 {
+            font-size: 36px;
+            color: white;
+            margin-bottom: 20px;
+        }
+        
+        button {
+            background: #BF0A30;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            font-size: 18px;
+            margin-top: 20px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        
+        button:hover {
+            background: #FF1B4D;
+        }
+        
+        .instructions {
+            margin-top: 15px;
+            line-height: 1.5;
+        }
+        
+        .sound-toggle {
+            background: #002868;
+            border: 2px solid white;
+            color: white;
+            padding: 8px 15px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        
+        .sound-toggle:hover {
+            background: #0038A8;
+        }
+        
+        .round-info {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            color: white;
+            font-size: 18px;
+            z-index: 10;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 10px;
+            background: #002868;
+            margin-top: 5px;
+            border: 1px solid white;
+        }
+        
+        .progress {
+            height: 100%;
+            background: #BF0A30;
+            width: 0%;
+            transition: width 0.3s;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="campaign-message">Vote For Roy Timmons Oklahoma State Representative!</div>
+        <div class="flag-container">
+            <div class="flag"></div>
+            <div class="stars"></div>
+        </div>
+        <div class="game-title">LIBERTY DEFENDER</div>
+    </div>
+    
+    <div class="game-container">
+        <canvas id="gameCanvas" width="800" height="500"></canvas>
+        <div class="game-ui">
+            <div>SCORE: <span id="score">0</span></div>
+            <div>LIVES: <span id="lives">3</span></div>
+        </div>
+        <div class="round-info">
+            <div>ROUND: <span id="round">1</span>/10</div>
+            <div>ENEMIES: <span id="enemiesLeft">0</span>/<span id="totalEnemies">0</span></div>
+            <div class="progress-bar">
+                <div class="progress" id="roundProgress"></div>
+            </div>
+        </div>
+        <div class="game-start" id="gameStart">
+            <h2>LIBERTY DEFENDER</h2>
+            <p>Defend American values for 10 rounds!</p>
+            <div class="instructions">
+                <p>Use LEFT and RIGHT arrows to move</p>
+                <p>Press SPACEBAR to shoot</p>
+                <p>Defeat all enemies in each round to advance</p>
+                <p>You have 3 lives - lose them all and it's game over</p>
+            </div>
+            <button id="startButton">START GAME</button>
+        </div>
+        <div class="round-complete" id="roundComplete">
+            <h2>ROUND <span id="currentRoundDisplay">1</span> COMPLETE!</h2>
+            <p>Get ready for round <span id="nextRoundDisplay">2</span></p>
+            <button id="nextRoundButton">CONTINUE</button>
+        </div>
+        <div class="game-complete" id="gameComplete">
+            <h2>VICTORY!</h2>
+            <p>You've successfully defended American values!</p>
+            <p>Final Score: <span id="finalScoreComplete">0</span></p>
+            <button id="restartCompleteButton">PLAY AGAIN</button>
+        </div>
+        <div class="game-over" id="gameOver">
+            <h2>GAME OVER</h2>
+            <p>Your Score: <span id="finalScore">0</span></p>
+            <button id="restartButton">PLAY AGAIN</button>
+        </div>
+    </div>
+    
+    <div class="controls">
+        <p>CONTROLS: ← → to move | SPACEBAR to shoot</p>
+        <button class="sound-toggle" id="soundToggle">SOUND: ON</button>
+    </div>
+
+    <!-- Audio elements -->
+    <audio id="backgroundMusic" loop>
+        <source src="https://github.com/TitanBusinessPros/TBP-Images/raw/main/Vote-Song-Roy.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="shootSound">
+        <source src="https://assets.mixkit.co/active_storage/sfx/250/250-preview.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="explosionSound">
+        <source src="https://assets.mixkit.co/active_storage/sfx/245/245-preview.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="roundCompleteSound">
+        <source src="https://assets.mixkit.co/active_storage/sfx/257/257-preview.mp3" type="audio/mpeg">
+    </audio>
+
+    <script>
+        // Initialize flag
+        function initFlag() {
+            const starsContainer = document.querySelector('.stars');
+            for (let i = 0; i < 20; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                star.innerHTML = '★';
+                starsContainer.appendChild(star);
+            }
+            
+            // Animate flag
+            const flag = document.querySelector('.flag');
+            let waveOffset = 0;
+            
+            function animateFlag() {
+                waveOffset += 0.05;
+                flag.style.transform = `skewX(${Math.sin(waveOffset) * 5}deg)`;
+                requestAnimationFrame(animateFlag);
+            }
+            
+            animateFlag();
+        }
+
+        // Game variables
+        let canvas, ctx;
+        let score = 0;
+        let lives = 3;
+        let currentRound = 1;
+        let totalEnemies = 0;
+        let enemiesDefeated = 0;
+        let gameActive = false;
+        let animationId;
+        let soundEnabled = true;
+        let lastEnemySpawnTime = 0;
+        let enemySpawnDelay = 1500; // ms between enemy spawns
+
+        // Audio elements
+        let backgroundMusic, shootSound, explosionSound, roundCompleteSound;
+
+        // Player
+        const player = {
+            x: 375,
+            y: 450,
+            width: 50,
+            height: 30,
+            speed: 8
+        };
+
+        // Arrays for game objects
+        const bullets = [];
+        const enemies = [];
+        const stars = [];
+
+        // Input handling
+        const keys = {};
+
+        // Initialize game
+        function initGame() {
+            canvas = document.getElementById('gameCanvas');
+            ctx = canvas.getContext('2d');
+            
+            // Initialize audio
+            backgroundMusic = document.getElementById('backgroundMusic');
+            shootSound = document.getElementById('shootSound');
+            explosionSound = document.getElementById('explosionSound');
+            roundCompleteSound = document.getElementById('roundCompleteSound');
+            
+            // Create background stars
+            for (let i = 0; i < 50; i++) {
+                stars.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    size: Math.random() * 2 + 1
+                });
+            }
+            
+            // Set up event listeners
+            window.addEventListener('keydown', function(e) {
+                keys[e.code] = true;
+            });
+            
+            window.addEventListener('keyup', function(e) {
+                keys[e.code] = false;
+            });
+            
+            document.getElementById('startButton').addEventListener('click', startGame);
+            document.getElementById('restartButton').addEventListener('click', startGame);
+            document.getElementById('nextRoundButton').addEventListener('click', startNextRound);
+            document.getElementById('restartCompleteButton').addEventListener('click', startGame);
+            document.getElementById('soundToggle').addEventListener('click', toggleSound);
+        }
+
+        // Toggle sound
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            document.getElementById('soundToggle').textContent = soundEnabled ? 'SOUND: ON' : 'SOUND: OFF';
+            
+            if (soundEnabled && gameActive) {
+                backgroundMusic.play().catch(e => console.log("Audio play failed:", e));
+            } else {
+                backgroundMusic.pause();
+            }
+        }
+
+        // Start game
+        function startGame() {
+            score = 0;
+            lives = 3;
+            currentRound = 1;
+            gameActive = true;
+            
+            bullets.length = 0;
+            enemies.length = 0;
+            
+            player.x = 375;
+            player.y = 450;
+            
+            document.getElementById('score').textContent = score;
+            document.getElementById('lives').textContent = lives;
+            document.getElementById('round').textContent = currentRound;
+            document.getElementById('gameStart').style.display = 'none';
+            document.getElementById('gameOver').style.display = 'none';
+            document.getElementById('gameComplete').style.display = 'none';
+            document.getElementById('roundComplete').style.display = 'none';
+            
+            // Start background music
+            if (soundEnabled) {
+                backgroundMusic.currentTime = 0;
+                backgroundMusic.play().catch(e => console.log("Audio play failed:", e));
+            }
+            
+            // Initialize first round
+            startRound();
+            
+            gameLoop();
+        }
+
+        // Start a new round
+        function startRound() {
+            // Reset round variables
+            enemiesDefeated = 0;
+            
+            // Calculate enemies for this round (increasing difficulty)
+            totalEnemies = 8 + (currentRound * 2); // Round 1: 10 enemies, Round 10: 28 enemies
+            document.getElementById('enemiesLeft').textContent = totalEnemies - enemiesDefeated;
+            document.getElementById('totalEnemies').textContent = totalEnemies;
+            
+            // Update progress bar
+            updateProgressBar();
+            
+            // Reset spawn timer
+            lastEnemySpawnTime = Date.now();
+        }
+
+        // Start next round
+        function startNextRound() {
+            currentRound++;
+            
+            if (currentRound > 10) {
+                // Game completed
+                document.getElementById('finalScoreComplete').textContent = score;
+                document.getElementById('gameComplete').style.display = 'block';
+                gameActive = false;
+                backgroundMusic.pause();
+                cancelAnimationFrame(animationId);
+                return;
+            }
+            
+            document.getElementById('round').textContent = currentRound;
+            document.getElementById('roundComplete').style.display = 'none';
+            
+            // Start the new round
+            startRound();
+            
+            // Continue game loop
+            gameActive = true;
+            gameLoop();
+        }
+
+        // Game over
+        function gameOver() {
+            gameActive = false;
+            document.getElementById('finalScore').textContent = score;
+            document.getElementById('gameOver').style.display = 'block';
+            backgroundMusic.pause();
+            cancelAnimationFrame(animationId);
+        }
+
+        // Create enemy
+        function createEnemy() {
+            // Adjust enemy speed based on round (capped for fairness)
+            const baseSpeed = 1.5;
+            const roundSpeed = Math.min(2.0, currentRound * 0.2);
+            const speed = baseSpeed + roundSpeed;
+            
+            const size = 30 + Math.random() * 20;
+            
+            enemies.push({
+                x: Math.random() * (canvas.width - size),
+                y: -size,
+                width: size,
+                height: size,
+                speed: speed
+            });
+        }
+
+        // Shoot bullet
+        function shoot() {
+            bullets.push({
+                x: player.x + player.width / 2 - 2,
+                y: player.y,
+                width: 4,
+                height: 10,
+                speed: 10
+            });
+            
+            // Play shoot sound
+            if (soundEnabled) {
+                shootSound.currentTime = 0;
+                shootSound.play().catch(e => console.log("Audio play failed:", e));
+            }
+        }
+
+        // Check collision
+        function checkCollision(obj1, obj2) {
+            return obj1.x < obj2.x + obj2.width &&
+                   obj1.x + obj1.width > obj2.x &&
+                   obj1.y < obj2.y + obj2.height &&
+                   obj1.y + obj1.height > obj2.y;
+        }
+
+        // Update progress bar
+        function updateProgressBar() {
+            const progress = (enemiesDefeated / totalEnemies) * 100;
+            document.getElementById('roundProgress').style.width = `${progress}%`;
+        }
+
+        // Update game state
+        function update() {
+            // Move player
+            if (keys['ArrowLeft'] && player.x > 0) {
+                player.x -= player.speed;
+            }
+            if (keys['ArrowRight'] && player.x < canvas.width - player.width) {
+                player.x += player.speed;
+            }
+            
+            // Shooting
+            if (keys['Space'] && Date.now() - (window.lastShot || 0) > 200) {
+                shoot();
+                window.lastShot = Date.now();
+            }
+
+            // Update bullets
+            for (let i = bullets.length - 1; i >= 0; i--) {
+                bullets[i].y -= bullets[i].speed;
+                
+                // Remove off-screen bullets
+                if (bullets[i].y < 0) {
+                    bullets.splice(i, 1);
+                }
+            }
+
+            // Update enemies
+            for (let i = enemies.length - 1; i >= 0; i--) {
+                enemies[i].y += enemies[i].speed;
+                
+                // Check if enemy reached bottom
+                if (enemies[i].y > canvas.height) {
+                    enemies.splice(i, 1);
+                    lives--;
+                    document.getElementById('lives').textContent = lives;
+                    
+                    if (lives <= 0) {
+                        gameOver();
+                        return;
+                    }
+                    continue;
+                }
+                
+                // Check bullet collisions
+                for (let j = bullets.length - 1; j >= 0; j--) {
+                    if (checkCollision(bullets[j], enemies[i])) {
+                        bullets.splice(j, 1);
+                        enemies.splice(i, 1);
+                        score += 10 * currentRound;
+                        enemiesDefeated++;
+                        document.getElementById('score').textContent = score;
+                        document.getElementById('enemiesLeft').textContent = totalEnemies - enemiesDefeated;
+                        updateProgressBar();
+                        
+                        // Play explosion sound
+                        if (soundEnabled) {
+                            explosionSound.currentTime = 0;
+                            explosionSound.play().catch(e => console.log("Audio play failed:", e));
+                        }
+                        
+                        break;
+                    }
+                }
+            }
+
+            // Spawn enemies at controlled rate
+            const currentTime = Date.now();
+            if (currentTime - lastEnemySpawnTime > enemySpawnDelay && enemiesDefeated < totalEnemies) {
+                createEnemy();
+                lastEnemySpawnTime = currentTime;
+                
+                // Slightly increase spawn rate as round progresses
+                enemySpawnDelay = Math.max(500, 1500 - (currentRound * 100));
+            }
+            
+            // Check if round is complete
+            if (enemiesDefeated >= totalEnemies && enemies.length === 0) {
+                // Round complete
+                gameActive = false;
+                cancelAnimationFrame(animationId);
+                
+                // Play round complete sound
+                if (soundEnabled) {
+                    roundCompleteSound.currentTime = 0;
+                    roundCompleteSound.play().catch(e => console.log("Audio play failed:", e));
+                }
+                
+                // Show round complete screen
+                document.getElementById('currentRoundDisplay').textContent = currentRound;
+                document.getElementById('nextRoundDisplay').textContent = currentRound + 1;
+                document.getElementById('roundComplete').style.display = 'block';
+            }
+        }
+
+        // Draw everything
+        function draw() {
+            // Clear canvas
+            ctx.fillStyle = '#000033';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw stars
+            ctx.fillStyle = '#FFFFFF';
+            stars.forEach(star => {
+                ctx.beginPath();
+                ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+                ctx.fill();
+            });
+            
+            // Draw player
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(player.x, player.y, player.width, player.height);
+            
+            // Draw bullets
+            ctx.fillStyle = '#BF0A30';
+            bullets.forEach(bullet => {
+                ctx.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
+            });
+            
+            // Draw enemies
+            ctx.fillStyle = '#BF0A30';
+            enemies.forEach(enemy => {
+                ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
+                
+                // Draw enemy details
+                ctx.fillStyle = '#002868';
+                ctx.fillRect(enemy.x + 5, enemy.y + 5, enemy.width - 10, 5);
+                ctx.fillRect(enemy.x + 5, enemy.y + enemy.height - 10, enemy.width - 10, 5);
+                ctx.fillStyle = '#BF0A30';
+            });
+        }
+
+        // Main game loop
+        function gameLoop() {
+            update();
+            draw();
+            
+            if (gameActive) {
+                animationId = requestAnimationFrame(gameLoop);
+            }
+        }
+
+        // Initialize everything when page loads
+        window.onload = function() {
+            initFlag();
+            initGame();
+        };
+    </script>
+</body>
+</html>
